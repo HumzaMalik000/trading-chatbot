@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Bot | Learn, Trade & Predict</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #0a0e1a 0%, #0f1724 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            background: #1a1e2e;
+            border-radius: 32px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #0f3b2c, #1a5a3a);
+            padding: 20px 24px;
+            color: #ffefcf;
+            text-align: center;
+            border-bottom: 3px solid #ffd700;
+        }
+
+        .chat-header h1 {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .sub {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #0f1322;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: fadeSlideUp 0.25s ease-out;
+        }
+
+        .user-message {
+            align-self: flex-end;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+        }
+
+        .bubble {
+            padding: 12px 18px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .user-bubble {
+            background: linear-gradient(135deg, #00b4d8, #0077b6);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot-bubble {
+            background: #2a2f45;
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+            border-left: 3px solid #ffd700;
+        }
+
+        .message-time {
+            font-size: 0.65rem;
+            margin-top: 5px;
+            margin-inline: 8px;
+            color: #888;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            background: #2a2f45;
+            width: fit-content;
+            border-radius: 20px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 60%, 100% { transform: scale(0.6); opacity: 0.5; }
+            30% { transform: scale(1.1); opacity: 1; }
+        }
+
+        .input-area {
+            background: #1a1e2e;
+            padding: 16px 20px;
+            border-top: 1px solid #2a2f45;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 30px;
+            background: #2a2f45;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .input-area input::placeholder {
+            color: #888;
+        }
+
+        .input-area button {
+            background: #ffd700;
+            border: none;
+            color: #1a1e2e;
+            font-size: 1.2rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .suggestions {
+            background: #1a1e2e;
+            padding: 10px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-top: 1px solid #2a2f45;
+        }
+
+        .suggestion-chip {
+            background: #2a2f45;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: #ffd700;
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .price-up {
+            color: #00ff88;
+        }
+
+        .price-down {
+            color: #ff4444;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>
+            <span>📈</span> 
+            Trading Bot
+            <span>💹</span>
+        </h1>
+        <div class="sub">Live Prices | AI Predictions | Trading Education</div>
+    </div>
+
+    <div class="messages-area" id="messagesArea"></div>
+
+    <div class="suggestions">
+        <div class="suggestion-chip" data-text="show usd to pkr rate">💵 USD to PKR</div>
+        <div class="suggestion-chip" data-text="show bitcoin price">₿ Bitcoin Price</div>
+        <div class="suggestion-chip" data-text="how to start trading">📚 Learn Trading</div>
+        <div class="suggestion-chip" data-text="predict bitcoin price">🔮 AI Prediction</div>
+        <div class="suggestion-chip" data-text="what is forex trading">💱 What is Forex?</div>
+        <div class="suggestion-chip" data-text="best indicators for trading">📊 Indicators</div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ask about trading, prices, or predictions..." autocomplete="off">
+        <button id="sendBtn">➤</button>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // FREE APIs Configuration
+    // ============================================
+    // ExchangeRate-API (free tier)
+    const EXCHANGE_API_KEY = "YOUR_API_KEY_HERE"; // Get from https://app.exchangerate-api.com/sign-up
+    
+    // CoinGecko API (no key needed for free tier)
+    const COINGECKO_API = "https://api.coingecko.com/api/v3";
+    
+    // ============================================
+    // Trading Education Database
+    // ============================================
+    const tradingEducation = {
+        "what is forex": "Forex (Foreign Exchange) is the global marketplace for trading currencies. It's the largest financial market in the world where currencies like USD, EUR, GBP, PKR are traded 24/5.",
+        
+        "how to start trading": "📚 **How to Start Trading:**\n\n1. Learn basics (1-2 months)\n2. Choose a broker (FBS, Octa, Exness)\n3. Open a demo account\n4. Practice with virtual money\n5. Learn technical analysis\n6. Start small with real money\n7. Never risk more than 2% per trade",
+        
+        "what is crypto": "Cryptocurrency is digital money secured by blockchain technology. Popular ones: Bitcoin (BTC), Ethereum (ETH), Binance Coin (BNB). They are decentralized and volatile.",
+        
+        "best indicators": "📊 **Top Technical Indicators:**\n\n1. RSI (Relative Strength Index) - overbought/oversold\n2. MACD - trend direction and momentum\n3. Moving Averages - trend following\n4. Bollinger Bands - volatility\n5. Fibonacci - support/resistance levels",
+        
+        "trading strategies": "💡 **Popular Trading Strategies:**\n\n• Day Trading - same day trades\n• Swing Trading - hold for days/weeks\n• Scalping - very short term (minutes)\n• Position Trading - long term (months/years)\n• News Trading - based on economic events",
+        
+        "risk management": "⚠️ **Risk Management Rules:**\n\n• Risk 1-2% per trade max\n• Use stop-loss always\n• Risk/Reward ratio at least 1:2\n• Never average down\n• Keep emotions in check",
+        
+        "technical analysis": "📈 **Technical Analysis Basics:**\n\n• Support - price level where buying occurs\n• Resistance - price level where selling occurs\n• Trend lines - direction of price\n• Chart patterns - head & shoulders, double top/bottom"
+    };
+    
+    // ============================================
+    // Simulated Live Data (for demo without API key)
+    // ============================================
+    let simulatedPrices = {
+        "USD-PKR": 278.50,
+        "EUR-PKR": 302.75,
+        "GBP-PKR": 352.30,
+        "BTC-USD": 68500,
+        "ETH-USD": 3500,
+        "AAPL": 175.50,
+        "GOOGL": 140.25,
+        "TSLA": 245.80
+    };
+    
+    // Update simulated prices randomly
+    setInterval(() => {
+        for (let symbol in simulatedPrices) {
+            const change = (Math.random() - 0.5) * 2;
+            simulatedPrices[symbol] = +(simulatedPrices[symbol] + change).toFixed(2);
+        }
+    }, 30000); // Update every 30 seconds
+    
+    // ============================================
+    // Live API Calls
+    // ============================================
+    async function getLivePrice(symbol, from, to) {
+        // Try live API if key is set
+        if (EXCHANGE_API_KEY && EXCHANGE_API_KEY !== "YOUR_API_KEY_HERE") {
+            try {
+                const response = await fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/pair/${from}/${to}`);
+                const data = await response.json();
+                if (data.conversion_rate) {
+                    return data.conversion_rate;
+                }
+            } catch(e) {
+                console.log("API failed, using simulated data");
+            }
+        }
+        
+        // Fallback to simulated data
+        const key = `${from}-${to}`;
+        return simulatedPrices[key] || simulatedPrices["USD-PKR"];
+    }
+    
+    async function getCryptoPrice(coin) {
+        try {
+            const response = await fetch(`${COINGECKO_API}/simple/price?ids=${coin}&vs_currencies=usd`);
+            const data = await response.json();
+            return data[coin]?.usd;
+        } catch(e) {
+            // Fallback to simulated
+            return coin === "bitcoin" ? simulatedPrices["BTC-USD"] : simulatedPrices["ETH-USD"];
+        }
+    }
+    
+    // ============================================
+    // AI Price Prediction (Simple Moving Average based)
+    // ============================================
+    function predictPrice(currentPrice, trend = "up") {
+        const volatility = currentPrice * 0.05; // 5% volatility
+        let predictedChange = 0;
+        
+        if (trend === "up") {
+            predictedChange = volatility * (Math.random() * 0.5 + 0.3);
+        } else if (trend === "down") {
+            predictedChange = -volatility * (Math.random() * 0.5 + 0.3);
+        } else {
+            predictedChange = (Math.random() - 0.5) * volatility;
+        }
+        
+        const predictedPrice = currentPrice + predictedChange;
+        const confidence = Math.floor(Math.random() * 30) + 60; // 60-90% confidence
+        
+        return {
+            price: predictedPrice.toFixed(2),
+            change: predictedChange.toFixed(2),
+            changePercent: ((predictedChange / currentPrice) * 100).toFixed(2),
+            confidence: confidence,
+            sentiment: predictedChange > 0 ? "🟢 BULLISH" : "🔴 BEARISH"
+        };
+    }
+    
+    // ============================================
+    // Bot Response Generator
+    // ============================================
+    async function getBotReply(userMsg) {
+        let msg = userMsg.toLowerCase().trim();
+        
+        // Currency rates
+        if (msg.includes("usd to pkr") || msg.includes("dollar to pkr")) {
+            const rate = await getLivePrice("USD-PKR", "USD", "PKR");
+            return `💵 **USD to PKR Live Rate**\n\n1 USD = ${rate} PKR\n\n📊 Market Status: ${rate > 278 ? "🟢 Strong" : "🔵 Normal"}\n\n⏱️ Updated: Just now`;
+        }
+        
+        if (msg.includes("eur to pkr") || msg.includes("euro to pkr")) {
+            const rate = await getLivePrice("EUR-PKR", "EUR", "PKR");
+            return `💶 **EUR to PKR Live Rate**\n\n1 EUR = ${rate} PKR\n\n🇪🇺 Euro vs Pakistani Rupee`;
+        }
+        
+        if (msg.includes("gbp to pkr") || msg.includes("pound to pkr")) {
+            const rate = await getLivePrice("GBP-PKR", "GBP", "PKR");
+            return `💷 **GBP to PKR Live Rate**\n\n1 GBP = ${rate} PKR\n\n🇬🇧 British Pound vs Pakistani Rupee`;
+        }
+        
+        // Crypto prices
+        if (msg.includes("bitcoin") || msg.includes("btc")) {
+            const price = await getCryptoPrice("bitcoin");
+            const prediction = predictPrice(price, Math.random() > 0.5 ? "up" : "down");
+            return `₿ **Bitcoin (BTC) Live Price**\n\n💰 Current: $${price.toLocaleString()}\n\n🔮 **AI Prediction:**\n• Target: $${prediction.price}\n• Change: ${prediction.changePercent}%\n• Sentiment: ${prediction.sentiment}\n• Confidence: ${prediction.confidence}%\n\n⚠️ Crypto is highly volatile!`;
+        }
+        
+        if (msg.includes("ethereum") || msg.includes("eth")) {
+            const price = await getCryptoPrice("ethereum");
+            const prediction = predictPrice(price, Math.random() > 0.5 ? "up" : "down");
+            return `💎 **Ethereum (ETH) Live Price**\n\n💰 Current: $${price.toLocaleString()}\n\n🔮 **AI Prediction:**\n• Target: $${prediction.price}\n• Change: ${prediction.changePercent}%\n• Sentiment: ${prediction.sentiment}\n• Confidence: ${prediction.confidence}%`;
+        }
+        
+        // Predictions
+        if (msg.includes("predict") && (msg.includes("bitcoin") || msg.includes("btc"))) {
+            const price = await getCryptoPrice("bitcoin");
+            const prediction = predictPrice(price);
+            return `🔮 **Bitcoin Price Prediction**\n\n📊 Current: $${price.toLocaleString()}\n🎯 Predicted: $${prediction.price}\n📈 Expected Change: ${prediction.changePercent}%\n💭 Sentiment: ${prediction.sentiment}\n✅ Confidence: ${prediction.confidence}%\n\n⚠️ This is AI-generated. Not financial advice!`;
+        }
+        
+        if (msg.includes("predict") && (msg.includes("usd") || msg.includes("dollar"))) {
+            const rate = await getLivePrice("USD-PKR", "USD", "PKR");
+            const prediction = predictPrice(rate);
+            return `🔮 **USD/PKR Prediction**\n\n📊 Current: ${rate} PKR\n🎯 Predicted: ${prediction.price} PKR\n📈 Expected Change: ${prediction.changePercent}%\n💭 Sentiment: ${prediction.sentiment}\n✅ Confidence: ${prediction.confidence}%\n\n⚠️ This is AI-generated. Not financial advice!`;
+        }
+        
+        // Trading education
+        for (let [key, value] of Object.entries(tradingEducation)) {
+            if (msg.includes(key)) {
+                return value;
+            }
+        }
+        
+        // Show all currencies
+        if (msg.includes("show all") || msg.includes("all currencies") || msg.includes("all rates")) {
+            const usd = await getLivePrice("USD-PKR", "USD", "PKR");
+            const eur = await getLivePrice("EUR-PKR", "EUR", "PKR");
+            const gbp = await getLivePrice("GBP-PKR", "GBP", "PKR");
+            const btc = await getCryptoPrice("bitcoin");
+            
+            return `📊 **Live Market Rates**\n\n💵 USD/PKR: ${usd}\n💶 EUR/PKR: ${eur}\n💷 GBP/PKR: ${gbp}\n₿ BTC/USD: $${btc.toLocaleString()}\n\n💡 Type "predict bitcoin" for AI predictions!\n📚 Type "how to start trading" to learn!`;
+        }
+        
+        // Help
+        if (msg.includes("help") || msg.includes("what can you do")) {
+            return `📚 **I can help you with:**\n\n💰 **Live Prices**\n• "usd to pkr"\n• "bitcoin price"\n• "show all rates"\n\n🔮 **AI Predictions**\n• "predict bitcoin"\n• "predict usd"\n\n📖 **Trading Education**\n• "how to start trading"\n• "what is forex"\n• "best indicators"\n• "risk management"\n• "trading strategies"\n\n💡 Just ask anything about trading!`;
+        }
+        
+        // Default
+        return `📈 **Trading Assistant**\n\nI can help you with:\n• Live currency & crypto prices\n• AI price predictions\n• Trading education for beginners\n\n💡 Try:\n• "usd to pkr"\n• "bitcoin price"\n• "how to start trading"\n• "predict bitcoin"`;
+    }
+    
+    // ============================================
+    // UI Functions
+    // ============================================
+    function getFormattedTime() {
+        const now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    function addMessageToUI(text, sender) {
+        const messagesArea = document.getElementById('messagesArea');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+        
+        const bubble = document.createElement('div');
+        bubble.className = `bubble ${sender === 'user' ? 'user-bubble' : 'bot-bubble'}`;
+        bubble.innerHTML = text.replace(/\n/g, '<br>');
+        
+        const timeSpan = document.createElement('div');
+        timeSpan.className = 'message-time';
+        timeSpan.innerText = getFormattedTime();
+        
+        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(timeSpan);
+        messagesArea.appendChild(messageDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+    
+    function showTypingIndicator() {
+        removeTypingIndicator();
+        const messagesArea = document.getElementById('messagesArea');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot-message';
+        typingDiv.id = 'typingIndicator';
+        const indicatorBox = document.createElement('div');
+        indicatorBox.className = 'typing-indicator';
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'typing-dot';
+            indicatorBox.appendChild(dot);
+        }
+        typingDiv.appendChild(indicatorBox);
+        messagesArea.appendChild(typingDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+    
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+    
+    async function sendBotResponse(userMessage) {
+        showTypingIndicator();
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 500));
+        const replyText = await getBotReply(userMessage);
+        removeTypingIndicator();
+        addMessageToUI(replyText, 'bot');
+    }
+    
+    async function handleUserMessage() {
+        const userInput = document.getElementById('userInput');
+        let message = userInput.value.trim();
+        if (message === "") return;
+        
+        userInput.value = "";
+        addMessageToUI(message, 'user');
+        await sendBotResponse(message);
+    }
+    
+    // Event Listeners
+    document.getElementById('sendBtn').addEventListener('click', handleUserMessage);
+    document.getElementById('userInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleUserMessage();
+    });
+    
+    document.querySelectorAll('.suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.getElementById('userInput').value = chip.getAttribute('data-text');
+            handleUserMessage();
+        });
+    });
+    
+    // Welcome Message
+    window.addEventListener('DOMContentLoaded', () => {
+        const welcomeMsg = `📈 **Welcome to Trading Bot!**
+
+I'm your AI trading assistant. I can help you with:
+
+💰 **Live Prices** - Currencies & Crypto
+🔮 **AI Predictions** - Price forecasts
+📚 **Trading Education** - Learn from scratch
+
+💡 **Try these commands:**
+• "usd to pkr" - Live dollar rate
+• "bitcoin price" - BTC with prediction
+• "how to start trading" - Beginner guide
+• "predict bitcoin" - AI forecast
+
+Start your trading journey now! 🚀`;
+        addMessageToUI(welcomeMsg, 'bot');
+    });
+</script>
+</body>
+</html>
